@@ -9,7 +9,7 @@ function Toast({ message, onClose }) {
     return () => clearTimeout(timer);
   }, [onClose]);
   return (
-    <div style={{position:'fixed',top:20,right:20,zIndex:9999}} className="bg-green-600 text-white px-4 py-2 rounded shadow-lg">
+    <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999 }} className="bg-green-600 text-white px-4 py-2 rounded shadow-lg">
       {message}
     </div>
   );
@@ -96,14 +96,14 @@ function New() {
       actions: prev.actions.map((action, i) =>
         i === index
           ? {
-              ...action,
-              attachmentsAssign: [
-                ...(action.attachmentsAssign || []).filter(
-                  existingFile => !fileMeta.some(newFile => newFile.originalName === existingFile.originalName)
-                ),
-                ...fileMeta
-              ]
-            }
+            ...action,
+            attachmentsAssign: [
+              ...(action.attachmentsAssign || []).filter(
+                existingFile => !fileMeta.some(newFile => newFile.originalName === existingFile.originalName)
+              ),
+              ...fileMeta
+            ]
+          }
           : action
       )
     }));
@@ -206,10 +206,13 @@ function New() {
         },
         body: JSON.stringify(reportData),
       });
+
       if (response.ok) {
         setToastMsg('Report submitted successfully!');
       } else {
-        setToastMsg('Failed to submit report.');
+        // Parse error message from response
+        const errorData = await response.json();
+        setToastMsg(errorData.message || 'Failed to submit report.');
       }
     } catch (error) {
       setToastMsg('Error submitting report.');
@@ -394,48 +397,27 @@ function New() {
                 </tr>
               </thead>
               <tbody>
-                {incidentApiData && (
-                  <tr>
-                    <td
-                      className="border-r border-b border-gray-300 p-2 text-center align-top"
-                      rowSpan={formData.chronology.length}
-                    >
+                {formData.chronology.map((entry, index) => (
+                  <tr key={index}>
+                    {/* Date & Time Column */}
+                    <td className="border-r border-b border-gray-300 p-2">
                       <input
-                        type="text"
-                        value={`${new Date(
-                          incidentApiData.IncidentDate
-                        ).toLocaleDateString()} ${
-                          incidentApiData.IncidentTime
-                            ? new Date(
-                                incidentApiData.IncidentTime
-                              ).toLocaleTimeString()
-                            : ''
-                        }`}
-                        readOnly
-                        className="w-full bg-gray-100 text-gray-700 border border-gray-300 rounded px-2 py-1 cursor-not-allowed"
-                      />
-                    </td>
-                    <td className="border-b border-gray-300 p-2">
-                      <input
-                        type="text"
-                        value={formData.chronology[0]?.activity || ''}
+                        type="datetime-local"
+                        value={entry.dateTime || ""}
                         onChange={(e) =>
-                          handleChronologyChange(0, 'activity', e.target.value)
+                          handleChronologyChange(index, "dateTime", e.target.value)
                         }
                         className="w-full bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-gray-300 rounded px-2 py-1"
-                        placeholder="Enter activity..."
                       />
                     </td>
-                  </tr>
-                )}
-                {formData.chronology.slice(1).map((entry, index) => (
-                  <tr key={index + 1}>
+
+                    {/* Activity Column */}
                     <td className="border-b border-gray-300 p-2 flex items-center gap-2">
                       <input
                         type="text"
-                        value={entry.activity || ''}
+                        value={entry.activity || ""}
                         onChange={(e) =>
-                          handleChronologyChange(index + 1, 'activity', e.target.value)
+                          handleChronologyChange(index, "activity", e.target.value)
                         }
                         className="w-full bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm border border-gray-300 rounded px-2 py-1"
                         placeholder="Enter activity..."
@@ -445,9 +427,7 @@ function New() {
                         onClick={() =>
                           setFormData((prev) => ({
                             ...prev,
-                            chronology: prev.chronology.filter(
-                              (_, i) => i !== index + 1
-                            ),
+                            chronology: prev.chronology.filter((_, i) => i !== index),
                           }))
                         }
                         className="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
@@ -459,27 +439,36 @@ function New() {
                 ))}
               </tbody>
             </table>
+
+            {/* Add Row Button */}
             <div className="mt-3 text-right">
               <button
                 type="button"
                 onClick={() =>
                   setFormData((prev) => ({
                     ...prev,
-                    chronology: [...prev.chronology, { activity: '' }],
+                    chronology: [
+                      ...prev.chronology,
+                      {
+                        dateTime: new Date().toISOString().slice(0, 16), // default current date-time
+                        activity: "",
+                      },
+                    ],
                   }))
                 }
                 className="px-3 py-1 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600"
               >
-                + Add Activity
+                + Add Row
               </button>
             </div>
           </div>
+
 
           {/* Other sections */}
           <table className="w-full text-sm mt-6" style={{ borderCollapse: 'collapse' }}>
             <tr>
               <td colSpan="2" className="border-b border-gray-300 p-3 font-semibold bg-gray-50">
-                Photograph / Video etc :- Attach in next slide 
+                Photograph / Video etc :- Attach in next slide
               </td>
             </tr>
             <tr>
